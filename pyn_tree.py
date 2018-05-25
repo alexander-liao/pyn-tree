@@ -14,6 +14,7 @@ def Getter(name):
 	return wrapper
 
 def getstr(code):
+	if not code: return "tryinput()"
 	c = code.pop(0)
 	if c not in getters:
 		return ""
@@ -28,8 +29,18 @@ def assign(name, val):
 	global_register[name] = val
 	return val
 
+import builtins, ast
+
 def getval(name):
-	return global_register.get(name, 0)
+	if name in global_register: return global_register[name]
+	if name in globals(): return globals()[name]
+	if name in dir(builtins): return getattr(builtins, name)
+	return 0
+
+def tryinput():
+	val = input()
+	try: return ast.literal_eval(val)
+	except: return val
 
 def fallthrough(obj):
 	return print(obj) or obj
@@ -52,13 +63,49 @@ def splatFuncCall(code):
 def declare(code):
 	return "assign('%s', %s)" % (code.pop(0), getstr(code))
 
+@Getter("G")
+def getvarname(code):
+	return "getval(%s)" % getstr(code)
+
+@Getter("I")
+def getblankinput(code):
+	return "input()"
+
 @Getter("P")
 def declare(code):
 	return "fallthrough(%s)" % getstr(code)
 
+@Getter("Z")
+def getintinput(code):
+	return "int(input())"
+
+@Getter("d")
+def setlongvar(code):
+	return "assign(%s, %s)" % (getstr(code), getstr(code))
+
+@Getter("g")
+def getlongvar(code):
+	output = ""
+	while code and code[0] != "}":
+		output += code.pop(0)
+	if code: code.pop(0)
+	return "getval('%s')" % output
+
+@Getter("i")
+def getinput(code):
+	return "input(%s)" % getstr(code)
+
 @Getter("x")
 def varX(code):
 	return "getval('x')"
+
+@Getter("y")
+def varY(code):
+	return "getval('y')"
+
+@Getter("z")
+def toint(code):
+	return "int(%s)" % getstr(code)
 
 @Getter("1")
 def num1(code):
@@ -161,10 +208,12 @@ def consumeNum(code, digits = "0123456789", neg = True, decimal = True):
 		output += code.pop(0)
 	return output
 
+with open("test.py", "w") as f:
+	try:
+		with open(sys.argv[1], "r") as g:
+			f.write(transpile(g.read()))
+	except:
+		f.write(transpile(sys.argv[1]))
+
 import os
-
-with open("__compiled.py", "w") as f:
-	with open(os.sys.argv[1], "r") as g:
-    f.write(transpile(g.read()))
-
-os.system("python3 __compiled.py")
+os.system("python3 test.py")
