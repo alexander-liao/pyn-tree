@@ -42,6 +42,27 @@ def tryinput():
 	try: return ast.literal_eval(val)
 	except: return val
 
+def deduplicate(array):
+	output = []
+	seen = {}
+	for obj in array:
+		if obj not in seen:
+			output.append(obj)
+			seen.add(obj)
+	return output
+
+def numerify(obj):
+	try:
+		return int(obj)
+	except:
+		try:
+			return float(obj)
+		except:
+			try:
+				return complex(obj)
+			except:
+				return obj
+
 def fallthrough(obj):
 	return print(obj) or obj
 
@@ -63,25 +84,67 @@ def splatFuncCall(code):
 def declare(code):
 	return "assign('%s', %s)" % (code.pop(0), getstr(code))
 
+@Getter("F")
+def listcompx(code):
+	return "[%s for x in %s]" % (getstr(code), getstr(code))
+
+@Getter("Ḟ")
+def listcomp(code):
+	varname = code.pop(0)
+	return "[%s for %s in %s]" % (getstr(code), varname, getstr(code))
+
 @Getter("G")
 def getvarname(code):
 	return "getval(%s)" % getstr(code)
 
 @Getter("I")
-def getblankinput(code):
-	return "input()"
+def getint(code):
+	return "int(input())"
+
+@Getter("L")
+def getlength(code):
+	return "len(%s)" % getstr(code)
+
+@Getter("Ŀ")
+def getlist(code):
+	return "list(input())"
+
+@Getter("Ḷ")
+def lowerrange(code):
+	return "list(range(int(%s)))" % getstr(code)
+
+@Getter("N")
+def getnumber(code):
+	return "numerify(input())"
 
 @Getter("P")
 def declare(code):
 	return "fallthrough(%s)" % getstr(code)
 
-@Getter("Z")
-def getintinput(code):
-	return "int(input())"
+@Getter("Q")
+def deduplicate(code):
+	return "deduplicate(%s)" % getstr(code)
+
+@Getter("R")
+def upperrange(code):
+	return "list(range(1, 1 + int(%s)))" % getstr(code)
+
+@Getter("S")
+def getstring(code):
+	return "input()"
 
 @Getter("d")
 def setlongvar(code):
 	return "assign(%s, %s)" % (getstr(code), getstr(code))
+
+@Getter("f")
+def listcompxcond(code):
+	return "[%s for x in %s if %s]" % (getstr(code), getstr(code), getstr(code))
+
+@Getter("ḟ")
+def listcompcond(code):
+	varname = code.pop(0)
+	return "[%s for %s in %s if %s]" % (getstr(code), varname, getstr(code), getstr(code))
 
 @Getter("g")
 def getlongvar(code):
@@ -92,8 +155,20 @@ def getlongvar(code):
 	return "getval('%s')" % output
 
 @Getter("i")
-def getinput(code):
-	return "input(%s)" % getstr(code)
+def toint(code):
+	return "int(%s)" % getstr(code)
+
+@Getter("l")
+def tolist(code):
+	return "list(%s)" % getstr(code)
+
+@Getter("n")
+def tonumber(code):
+	return "numerify(%s)" % getstr(code)
+
+@Getter("s")
+def tostring(code):
+	return "str(%s)" % getstr(code)
 
 @Getter("x")
 def varX(code):
@@ -102,10 +177,6 @@ def varX(code):
 @Getter("y")
 def varY(code):
 	return "getval('y')"
-
-@Getter("z")
-def toint(code):
-	return "int(%s)" % getstr(code)
 
 @Getter("1")
 def num1(code):
@@ -199,6 +270,30 @@ def div(code):
 @Getter("*")
 def exp(code):
 	return "(%s ** %s)" % (getstr(code), getstr(code))
+
+@Getter("&")
+def _and(code):
+	return "(%s & %s)" % (getstr(code), getstr(code))
+
+@Getter("|")
+def _or(code):
+	return "(%s | %s)" % (getstr(code), getstr(code))
+
+@Getter("^")
+def _xor(code):
+	return "(%s ^ %s)" % (getstr(code), getstr(code))
+
+@Getter(">")
+def gt(code):
+	return "(%s > %s)" % (getstr(code), getstr(code))
+
+@Getter("<")
+def lt(code):
+	return "(%s < %s)" % (getstr(code), getstr(code))
+
+@Getter("¬")
+def logical_not(code):
+	return "(not %s)" % getstr(code)
 
 def consumeNum(code, digits = "0123456789", neg = True, decimal = True):
 	output = ""
