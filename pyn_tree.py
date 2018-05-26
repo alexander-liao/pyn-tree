@@ -51,6 +51,12 @@ def deduplicate(array):
 			seen.add(obj)
 	return output
 
+def wloop(cond, iter):
+	output = 0
+	while cond():
+		output = iter()
+	return output
+
 def numerify(obj):
 	try:
 		return int(obj)
@@ -80,13 +86,22 @@ def oneArgFuncCall(code):
 def splatFuncCall(code):
 	return "(%s)(*%s)" % (getstr(code), getstr(code))
 
+@Getter("E")
+def evalinput(code):
+	return "eval(input())"
+
 @Getter("D")
 def declare(code):
 	return "assign('%s', %s)" % (code.pop(0), getstr(code))
 
-@Getter("F")
+@Getter("€")
 def listcompx(code):
 	return "[%s for x in %s]" % (getstr(code), getstr(code))
+
+@Getter("F")
+def repeatloop(code):
+	times = getstr(code)
+	return "[%s for _ in range(%s)]" % (getstr(code), times)
 
 @Getter("Ḟ")
 def listcomp(code):
@@ -294,6 +309,28 @@ def lt(code):
 @Getter("¬")
 def logical_not(code):
 	return "(not %s)" % getstr(code)
+
+@Getter("?")
+def condif(code):
+	condition = getstr(code)
+	return "(%s if %s else None)" % (getstr(code), condition)
+
+@Getter("¿")
+def condifelse(code):
+	condition = getstr(code)
+	return "(%s if %s else %s)" % (getstr(code), condition, getstr(code))
+
+@Getter("¤")
+def block(code):
+	output = []
+	while code and code[0] != "}":
+		output.append(getstr(code))
+	if code: code.pop(0)
+	return "(" + " and ".join("[%s]" % k for k in output[:-1]) + " and %s)" % output[-1]
+
+@Getter("¡")
+def whileloop(code):
+	return "wloop(lambda: (%s), lambda: (%s))" % (getstr(code), getstr(code))
 
 def consumeNum(code, digits = "0123456789", neg = True, decimal = True):
 	output = ""
