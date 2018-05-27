@@ -131,6 +131,10 @@ def getvarname(code):
 def getint(code):
 	return "int(input())"
 
+@Getter("J")
+def joiner(code):
+	return "''.join(map(str, %s))" % getstr(code)
+
 @Getter("L")
 def getlength(code):
 	return "len(%s)" % getstr(code)
@@ -195,9 +199,17 @@ def toint(code):
 def tointbase(code):
 	return "int(getintable(%s), %s)" % (getstr(code), getstr(code))
 
+@Getter("j")
+def customjoiner(code):
+	return "(%s).join(map(str, %s))" % (getstr(code), getstr(code))
+
 @Getter("l")
 def tolist(code):
 	return "list(%s)" % getstr(code)
+
+@Getter("ḷ")
+def toset(code):
+	return "set(%s)" % getstr(code)
 
 @Getter("n")
 def tonumber(code):
@@ -207,6 +219,10 @@ def tonumber(code):
 def tostring(code):
 	return "str(%s)" % getstr(code)
 
+@Getter("w")
+def varW(code):
+	return "getval('w')"
+
 @Getter("x")
 def varX(code):
 	return "getval('x')"
@@ -214,6 +230,10 @@ def varX(code):
 @Getter("y")
 def varY(code):
 	return "getval('y')"
+
+@Getter("z")
+def varZ(code):
+	return "getval('z')"
 
 @Getter("1")
 def num1(code):
@@ -287,6 +307,11 @@ def empty(code):
 
 binfunc = {}
 
+binfunc["°"] = "getattr({L}, {R})"
+@Getter("°")
+def subgetter(code):
+	return "getattr(%s, %s)" % (getstr(code), getstr(code))
+
 binfunc["+"] = "{L} + {R}"
 @Getter("+")
 def add(code):
@@ -351,6 +376,26 @@ binfunc[";"] = "concat({L}, {R})"
 def concat(code):
 	return "concat(%s, %s)" % (getstr(code), getstr(code))
 
+binfunc["="] = "{L} == {R}"
+@Getter("=")
+def equality(code):
+	return "(%s == %s)" % (getstr(code), getstr(code))
+
+binfunc["⁻"] = "{L} != {R}"
+@Getter("⁻")
+def inequality(code):
+	return "(%s != %s)" % (getstr(code), getstr(code))
+
+binfunc["ė"] = "{L} in {R}"
+@Getter("ė")
+def containcheck(code):
+	return "(%s in %s)" % (getstr(code), getstr(code))
+
+binfunc["ẹ"] = "{L} not in {R}"
+@Getter("ẹ")
+def uncontaincheck(code):
+	return "(%s not in %s)" % (getstr(code), getstr(code))
+
 @Getter("?")
 def condif(code):
 	condition = getstr(code)
@@ -385,6 +430,10 @@ def arrayaccess(code):
 def reducer(code):
 	return ("functools.reduce(lambda a, b: %s, %s)" % (binfunc[code.pop(0)], getstr(code))).format(L = "a", R = "b")
 
+@Getter("\\")
+def insertraw(code):
+	return code.pop(0)
+
 @Getter("`")
 def slicer(code):
 	if code[0] == "`":
@@ -392,6 +441,16 @@ def slicer(code):
 		return "%s:%s:%s" % (getstr(code), getstr(code), getstr(code))
 	else:
 		return "%s:%s" % (getstr(code), getstr(code))
+
+@Getter("§")
+def funcdef(code):
+	args = []
+	splat = code[0] == "*"
+	if splat: code.pop(0)
+	while code and code[0] != ":":
+		args.append(code.pop(0))
+	if code: code.pop(0)
+	return "lambda " + "*" * splat + ", ".join(args) + ": " + "[0, " + ", ".join("assign('%s', %s)" % (name, name) for name in args) + "] and " + getstr(code)
 
 @Getter("[")
 def formlist(code):
