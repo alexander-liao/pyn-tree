@@ -29,7 +29,7 @@ def assign(name, val):
 	global_register[name] = val
 	return val
 
-import builtins, ast
+import builtins, ast, functools
 
 def getval(name):
 	if name in global_register: return global_register[name]
@@ -50,6 +50,22 @@ def deduplicate(array):
 			output.append(obj)
 			seen.add(obj)
 	return output
+
+def getintable(obj):
+	if type(obj) == str:
+		return obj
+	else:
+		try:
+			return "".join("0123456789abcdefghijklmnopqrstuvwxyz"[y] for y in obj)
+		except:
+			return "0"
+
+def concat(left, right):
+	if hasattr(left, "__iter__"): left = list(left)
+	else: left = [left]
+	if hasattr(right, "__iter__"): right = list(right)
+	else: right = [right]
+	return left + right
 
 def wloop(cond, iter):
 	output = 0
@@ -96,7 +112,7 @@ def declare(code):
 
 @Getter("€")
 def listcompx(code):
-	return "[%s for x in %s]" % (getstr(code), getstr(code))
+	return "[[assign('x', x)] and %s for x in %s]" % (getstr(code), getstr(code))
 
 @Getter("F")
 def repeatloop(code):
@@ -105,8 +121,7 @@ def repeatloop(code):
 
 @Getter("Ḟ")
 def listcomp(code):
-	varname = code.pop(0)
-	return "[%s for %s in %s]" % (getstr(code), varname, getstr(code))
+	return "[[assign('%s', x)] and %s for x in %s]" % (code.pop(0), getstr(code), getstr(code))
 
 @Getter("G")
 def getvarname(code):
@@ -152,14 +167,17 @@ def getstring(code):
 def setlongvar(code):
 	return "assign(%s, %s)" % (getstr(code), getstr(code))
 
+@Getter("e")
+def evaler(code):
+	return "eval(%s)" % getstr(code)
+
 @Getter("f")
 def listcompxcond(code):
-	return "[%s for x in %s if %s]" % (getstr(code), getstr(code), getstr(code))
+	return "[[assign('x', x)] and %s for x in %s if %s]" % (getstr(code), getstr(code), getstr(code))
 
 @Getter("ḟ")
 def listcompcond(code):
-	varname = code.pop(0)
-	return "[%s for %s in %s if %s]" % (getstr(code), varname, getstr(code), getstr(code))
+	return "[[assign('%s', x)] and %s for x in %s if %s]" % (code.pop(0), getstr(code), getstr(code), getstr(code))
 
 @Getter("g")
 def getlongvar(code):
@@ -172,6 +190,10 @@ def getlongvar(code):
 @Getter("i")
 def toint(code):
 	return "int(%s)" % getstr(code)
+
+@Getter("ị")
+def tointbase(code):
+	return "int(getintable(%s), %s)" % (getstr(code), getstr(code))
 
 @Getter("l")
 def tolist(code):
@@ -258,50 +280,64 @@ def gstr(code):
 			output += c
 	return output + '"'
 
+@Getter("\n")
 @Getter(" ")
 def empty(code):
 	return getstr(code)
 
+binfunc = {}
+
+binfunc["+"] = "{L} + {R}"
 @Getter("+")
 def add(code):
 	return "(%s + %s)" % (getstr(code), getstr(code))
 
+binfunc["_"] = "{L} - {R}"
 @Getter("_")
 def sub(code):
 	return "(%s - %s)" % (getstr(code), getstr(code))
 
+binfunc["×"] = "{L} * {R}"
 @Getter("×")
 def mul(code):
 	return "(%s * %s)" % (getstr(code), getstr(code))
 
+binfunc[":"] = "{L} // {R}"
 @Getter(":")
 def floordiv(code):
 	return "(%s // %s)" % (getstr(code), getstr(code))
 
+binfunc["÷"] = "{L} / {R}"
 @Getter("÷")
 def div(code):
 	return "(%s / %s)" % (getstr(code), getstr(code))
 
+binfunc["*"] = "{L} ** {R}"
 @Getter("*")
 def exp(code):
 	return "(%s ** %s)" % (getstr(code), getstr(code))
 
+binfunc["&"] = "{L} & {R}"
 @Getter("&")
 def _and(code):
 	return "(%s & %s)" % (getstr(code), getstr(code))
 
+binfunc["|"] = "{L} | {R}"
 @Getter("|")
 def _or(code):
 	return "(%s | %s)" % (getstr(code), getstr(code))
 
+binfunc["^"] = "{L} ^ {R}"
 @Getter("^")
 def _xor(code):
 	return "(%s ^ %s)" % (getstr(code), getstr(code))
 
+binfunc[">"] = "{L} > {R}"
 @Getter(">")
 def gt(code):
 	return "(%s > %s)" % (getstr(code), getstr(code))
 
+binfunc["<"] = "{L} < {R}"
 @Getter("<")
 def lt(code):
 	return "(%s < %s)" % (getstr(code), getstr(code))
@@ -309,6 +345,11 @@ def lt(code):
 @Getter("¬")
 def logical_not(code):
 	return "(not %s)" % getstr(code)
+
+binfunc[";"] = "concat({L}, {R})"
+@Getter(";")
+def concat(code):
+	return "concat(%s, %s)" % (getstr(code), getstr(code))
 
 @Getter("?")
 def condif(code):
@@ -328,9 +369,45 @@ def block(code):
 	if code: code.pop(0)
 	return "(" + " and ".join("[%s]" % k for k in output[:-1]) + " and %s)" % output[-1]
 
+@Getter("⁺")
+def selfie(code):
+	return ("(lambda a: %s)(%s)" % (binfunc[code.pop(0)], getstr(code))).format(L = "a", R = "a")
+
 @Getter("¡")
 def whileloop(code):
 	return "wloop(lambda: (%s), lambda: (%s))" % (getstr(code), getstr(code))
+
+@Getter("#")
+def arrayaccess(code):
+	return "(%s)[%s]" % (getstr(code), getstr(code))
+
+@Getter("/")
+def reducer(code):
+	return ("functools.reduce(lambda a, b: %s, %s)" % (binfunc[code.pop(0)], getstr(code))).format(L = "a", R = "b")
+
+@Getter("`")
+def slicer(code):
+	if code[0] == "`":
+		code.pop(0)
+		return "%s:%s:%s" % (getstr(code), getstr(code), getstr(code))
+	else:
+		return "%s:%s" % (getstr(code), getstr(code))
+
+@Getter("[")
+def formlist(code):
+	output = []
+	while code and code[0] != "]":
+		output.append(getstr(code))
+	if code: code.pop(0)
+	return "[" + ", ".join(output) + "]"
+
+@Getter("{")
+def formlist(code):
+	output = []
+	while code and code[0] != "}":
+		output.append(getstr(code))
+	if code: code.pop(0)
+	return "set([" + ", ".join(output) + "])"
 
 def consumeNum(code, digits = "0123456789", neg = True, decimal = True):
 	output = ""
@@ -340,12 +417,16 @@ def consumeNum(code, digits = "0123456789", neg = True, decimal = True):
 		output += code.pop(0)
 	return output
 
-with open("test.py", "w") as f:
-	try:
-		with open(sys.argv[1], "r") as g:
-			f.write(transpile(g.read()))
-	except:
-		f.write(transpile(sys.argv[1]))
+try:
+	with open(sys.argv[1], "r") as f:
+		trans = transpile(g.read())
+except:
+	trans = transpile(sys.argv[1])
 
-import os
-os.system("python3 test.py")
+if "--transpile" in sys.argv:
+	print(trans)
+else:
+	with open("__transpiled.py", "w") as f:
+		f.write(trans)
+	import os
+	os.system("python3 __transpiled.py")
