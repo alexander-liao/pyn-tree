@@ -478,7 +478,7 @@ def consumeNum(code, digits = "0123456789", neg = True, decimal = True):
 
 try:
 	with open(sys.argv[1], "r") as f:
-		trans = transpile(g.read())
+		trans = transpile(f.read())
 except:
 	trans = transpile(sys.argv[1])
 
