@@ -98,10 +98,6 @@ def fallthrough(obj):
 def oneArgFuncCall(code):
 	return "(%s)(%s)" % (getstr(code), getstr(code))
 
-@Getter("c")
-def splatFuncCall(code):
-	return "(%s)(*%s)" % (getstr(code), getstr(code))
-
 @Getter("E")
 def evalinput(code):
 	return "eval(input())"
@@ -147,6 +143,14 @@ def getlist(code):
 def lowerrange(code):
 	return "list(range(int(%s)))" % getstr(code)
 
+@Getter("Ṁ")
+def maxgetter(code):
+	return "max(%s)" % getstr(code)
+
+@Getter("Ṃ")
+def mingetter(code):
+	return "min(%s)" % getstr(code)
+
 @Getter("N")
 def getnumber(code):
 	return "numerify(input())"
@@ -167,6 +171,23 @@ def upperrange(code):
 def getstring(code):
 	return "input()"
 
+@Getter("Ṡ")
+def sorter(code):
+	return "sorted(%s)" % getstr(code)
+
+@Getter("c")
+def splatFuncCall(code):
+	return "(%s)(*%s)" % (getstr(code), getstr(code))
+
+@Getter("ċ")
+def multiFuncCall(code):
+	func = getstr(code)
+	arglist = []
+	while code and code[0] != "}":
+		arglist.append(getstr(code))
+	if code: code.pop(0)
+	return "(%s)(%s)" % (func, ", ".join(arglist))
+
 @Getter("d")
 def setlongvar(code):
 	return "assign(%s, %s)" % (getstr(code), getstr(code))
@@ -186,7 +207,7 @@ def listcompcond(code):
 @Getter("g")
 def getlongvar(code):
 	output = ""
-	while code and code[0] != "}":
+	while code and code[0].isidentifier():
 		output += code.pop(0)
 	if code: code.pop(0)
 	return "getval('%s')" % output
@@ -211,6 +232,14 @@ def tolist(code):
 def toset(code):
 	return "set(%s)" % getstr(code)
 
+@Getter("ṁ")
+def maxkey(code):
+	return "max(%s, key = lambda x: %s)" % (getstr(code), getstr(code))
+
+@Getter("ṃ")
+def minkey(code):
+	return "min(%s, key = lambda x: %s)" % (getstr(code), getstr(code))
+
 @Getter("n")
 def tonumber(code):
 	return "numerify(%s)" % getstr(code)
@@ -218,6 +247,10 @@ def tonumber(code):
 @Getter("s")
 def tostring(code):
 	return "str(%s)" % getstr(code)
+
+@Getter("ṡ")
+def keysorter(code):
+	return "sorted(%s, key = lambda x: [assign('x', x)] and %s)" % (getstr(code), getstr(code))
 
 @Getter("w")
 def varW(code):
@@ -305,10 +338,18 @@ def gstr(code):
 def empty(code):
 	return getstr(code)
 
+@Getter("ø")
+def subgetraw(code):
+	attrname = ""
+	while code and code[0].isidentifier():
+		attrname += code.pop(0)
+	if code: code.pop(0)
+	return "getattr(%s, %r)" % (getstr(code), attrname)
+
 binfunc = {}
 
-binfunc["°"] = "getattr({L}, {R})"
-@Getter("°")
+binfunc["Ø"] = "getattr({L}, {R})"
+@Getter("Ø")
 def subgetter(code):
 	return "getattr(%s, %s)" % (getstr(code), getstr(code))
 
@@ -467,6 +508,18 @@ def formlist(code):
 		output.append(getstr(code))
 	if code: code.pop(0)
 	return "set([" + ", ".join(output) + "])"
+
+@Getter("æ")
+def specials(code):
+	format = special_format.get(code.pop(0), "%s")
+	return format % getstr(code)
+
+special_format = {
+	"f": "(%s).find",
+	"c": "(%s).count",
+	"i": "(%s).index",
+	"r": "(%s).replace",
+}
 
 def consumeNum(code, digits = "0123456789", neg = True, decimal = True):
 	output = ""
