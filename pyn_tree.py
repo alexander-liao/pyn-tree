@@ -512,7 +512,7 @@ def formlist(code):
 @Getter("æ")
 def specials(code):
 	format = special_format.get(code.pop(0), "%s")
-	return format % tuple(getstr(code) for _ in range(format.count("%s")))
+	return format % tuple(getstr(code) for _ in range(format.count("%s") + format.count("%r") + format.count("%d")))
 
 special_format = {
 	"f": "(%s).find",
