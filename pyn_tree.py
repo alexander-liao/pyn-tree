@@ -512,13 +512,14 @@ def formlist(code):
 @Getter("æ")
 def specials(code):
 	format = special_format.get(code.pop(0), "%s")
-	return format % getstr(code)
+	return format % tuple(getstr(code) for _ in range(format.count("%s")))
 
 special_format = {
 	"f": "(%s).find",
 	"c": "(%s).count",
 	"i": "(%s).index",
 	"r": "(%s).replace",
+	"=": "%s = %s",
 }
 
 def consumeNum(code, digits = "0123456789", neg = True, decimal = True):
