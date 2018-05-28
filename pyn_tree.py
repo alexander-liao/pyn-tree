@@ -1,9 +1,9 @@
 import sys
 
-codepage  = """¡¢£¤¥¦©¬®µ½¿€ÆÇÐÑ×ØŒÞßæçðıȷñ÷øœþ !"#$%&'()*+,-./0123456789:;<=>?"""
-codepage += """@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~¶"""
-codepage += """°¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ƁƇƊƑƓƘⱮƝƤƬƲȤɓƈɗƒɠɦƙɱɲƥʠɼʂƭʋȥẠḄḌẸḤỊḲḶṂṆỌṚṢṬỤṾẈỴẒȦḂ"""
-codepage += """ĊḊĖḞĠḢİĿṀṄȮṖṘṠṪẆẊẎŻạḅḍẹḥịḳḷṃṇọṛṣṭ§Äẉỵẓȧḃċḋėḟġḣŀṁṅȯṗṙṡṫẇẋẏż«»‘’“”"""
+code_page  = """¡¢£¤¥¦©¬®µ½¿€ÆÇÐÑ×ØŒÞßæçðıȷñ÷øœþ !"#$%&'()*+,-./0123456789:;<=>?"""
+code_page += """@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~¶"""
+code_page += """°¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ƁƇƊƑƓƘⱮƝƤƬƲȤɓƈɗƒɠɦƙɱɲƥʠɼʂƭʋȥẠḄḌẸḤỊḲḶṂṆỌṚṢṬỤṾẈỴẒȦḂ"""
+code_page += """ĊḊĖḞĠḢİĿṀṄȮṖṘṠṪẆẊẎŻạḅḍẹḥịḳḷṃṇọṛṣṭ§Äẉỵẓȧḃċḋėḟġḣŀṁṅȯṗṙṡṫẇẋẏż«»‘’“”"""
 
 getters = {}
 
@@ -530,11 +530,24 @@ def consumeNum(code, digits = "0123456789", neg = True, decimal = True):
 		output += code.pop(0)
 	return output
 
-try:
-	with open(sys.argv[1], "r") as f:
-		trans = transpile(f.read())
-except:
-	trans = transpile(sys.argv[1])
+flag_file = "f" in sys.argv[1]
+flag_utf8 = "u" in sys.argv[1]
+
+if flag_file:
+	with open(sys.argv[2], "rb") as f:
+		code = f.read()
+	if flag_utf8:
+		code = "".join(char for char in code.decode("utf-8") if char in code_page)
+	else:
+		code = "".join(code_page[i] for i in code)
+else:
+	code = sys.argv[2]
+	if flag_utf8:
+		code = "".join(char for char in code if char in code_page)
+	else:
+		code = "".join(code_page[ord(i)] for i in code)
+
+trans = transpile(code)
 
 if "--transpile" in sys.argv:
 	print(trans)
