@@ -175,6 +175,10 @@ def getstring(code):
 def sorter(code):
 	return "sorted(%s)" % getstr(code)
 
+@Getter("Ṣ")
+def rsorter(code):
+	return "sorted(%s, reverse = True)" % getstr(code)
+
 @Getter("c")
 def splatFuncCall(code):
 	return "(%s)(*%s)" % (getstr(code), getstr(code))
@@ -251,6 +255,10 @@ def tostring(code):
 @Getter("ṡ")
 def keysorter(code):
 	return "sorted(%s, key = lambda x: [assign('x', x)] and %s)" % (getstr(code), getstr(code))
+
+@Getter("ṣ")
+def rkeysorter(code):
+	return "sorted(%s, reverse = True, key = lambda x: [assign('x', x)] and %s)" % (getstr(code), getstr(code))
 
 @Getter("w")
 def varW(code):
