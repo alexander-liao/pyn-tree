@@ -29,7 +29,17 @@ def assign(name, val):
 	global_register[name] = val
 	return val
 
-import builtins, ast, functools
+current = None
+
+def stash(val):
+	global current
+	current = val
+	return val
+
+def cache():
+	return current
+
+import builtins, ast, functools, regex
 
 def getval(name):
 	if name in global_register: return global_register[name]
@@ -519,7 +529,8 @@ def formlist(code):
 
 @Getter("æ")
 def specials(code):
-	format = special_format.get(code.pop(0), "%s")
+	if code[0] in special_format: format = special_format[code.pop(0)]
+	else: return getstr(code)
 	return format % tuple(getstr(code) for _ in range(format.count("%s") + format.count("%r") + format.count("%d")))
 
 special_format = {
@@ -528,6 +539,24 @@ special_format = {
 	"i": "(%s).index",
 	"r": "(%s).replace",
 	"=": "%s = %s",
+}
+
+@Getter("ɼ")
+def regex_specials(code):
+	if code[0] in regex_format: format = regex_format[code.pop(0)]
+	else: format = "regex.find(%s, %s)"
+	return format % tuple(getstr(code) for _ in range(format.count("%s") + format.count("%r") + format.count("%d")))
+
+regex_format = {
+	"f": "(stash(regex.search(%s, %s)) and cache().group(0))",
+	"s": "regex.search(%s, %s)",
+	"g": "(%s).group(%s)",
+	"G": "(%s).group(0)",
+	"p": "(%s).groups()",
+	"b": "(stash(regex.match(%s, %s)) and cache().group(0))",
+	"m": "regex.match(%s, %s)",
+	"a": "regex.findall(%s, %s)",
+	"r": "regex.sub(%s, %s, %s)",
 }
 
 def consumeNum(code, digits = "0123456789", neg = True, decimal = True):
