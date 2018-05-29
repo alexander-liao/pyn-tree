@@ -543,6 +543,8 @@ special_format = {
 	"a": "(%s).append",
 	"c": "(%s).count",
 	"e": "(%s).extend",
+	"ė": "eval",
+	"ẹ": "exec",
 	"f": "(%s).find",
 	"i": "(%s).index",
 	"r": "(%s).replace",
