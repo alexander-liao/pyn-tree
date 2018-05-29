@@ -488,7 +488,7 @@ def block(code):
 	while code and code[0] != "}":
 		output.append(getstr(code))
 	if code: code.pop(0)
-	return "(" + " and ".join("[%s]" % k for k in output[:-1]) + " and %s)" % output[-1]
+	return "(" + " and ".join("[%s]" % k for k in output[:-1]) + " and %s)" % output[-1] if output else "0"
 
 @Getter("⁺")
 def selfie(code):
