@@ -533,9 +533,17 @@ def specials(code):
 	else: return getstr(code)
 	return format % tuple(getstr(code) for _ in range(format.count("%s") + format.count("%r") + format.count("%d")))
 
+@Getter("Æ")
+def specialcalls(code):
+	if code[0] in special_format: format = special_format[code.pop(0)] + "(%s)"
+	else: return getstr(code)
+	return format % tuple(getstr(code) for _ in range(format.count("%s") + format.count("%r") + format.count("%d")))
+
 special_format = {
-	"f": "(%s).find",
+	"a": "(%s).append",
 	"c": "(%s).count",
+	"e": "(%s).extend",
+	"f": "(%s).find",
 	"i": "(%s).index",
 	"r": "(%s).replace",
 	"=": "%s = %s",
