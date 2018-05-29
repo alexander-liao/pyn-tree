@@ -197,6 +197,10 @@ def sorter(code):
 def rsorter(code):
 	return "sorted(%s, reverse = True)" % getstr(code)
 
+@Getter("a")
+def pythonand(code):
+	return "(%s and %s)" % (getstr(code), getstr(code))
+
 @Getter("c")
 def splatFuncCall(code):
 	return "(%s)(*%s)" % (getstr(code), getstr(code))
@@ -220,11 +224,12 @@ def evaler(code):
 
 @Getter("f")
 def listcompxcond(code):
-	return "[[assign('x', x)] and %s for x in %s if %s]" % (getstr(code), getstr(code), getstr(code))
+	return "[%s for x in %s if [assign('x', x)] and %s]" % (getstr(code), getstr(code), getstr(code))
 
 @Getter("ḟ")
 def listcompcond(code):
-	return "[[assign('%s', x)] and %s for x in %s if %s]" % (code.pop(0), getstr(code), getstr(code), getstr(code))
+	varname = code.pop(0)
+	return "[%s for x in %s if [assign('%s', x)] and %s]" % (getstr(code), getstr(code), varname, getstr(code))
 
 @Getter("g")
 def getlongvar(code):
@@ -265,6 +270,10 @@ def minkey(code):
 @Getter("n")
 def tonumber(code):
 	return "numerify(%s)" % getstr(code)
+
+@Getter("o")
+def pythonor(code):
+	return "(%s or %s)"
 
 @Getter("s")
 def tostring(code):
