@@ -39,7 +39,7 @@ def stash(val):
 def cache():
 	return current
 
-import builtins, ast, functools, regex
+import sys, builtins, ast, functools, regex
 
 def getval(name):
 	if name in global_register: return global_register[name]
@@ -107,6 +107,14 @@ def fallthrough(obj):
 @Getter("C")
 def oneArgFuncCall(code):
 	return "(%s)(%s)" % (getstr(code), getstr(code))
+
+@Getter("Ċ")
+def readchar(code):
+	return "sys.stdin.read(1)"
+
+@Getter("ċ")
+def readchars(code):
+	return "sys.stdin.read(%s)"
 
 @Getter("E")
 def evalinput(code):
