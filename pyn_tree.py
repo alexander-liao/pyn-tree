@@ -61,6 +61,19 @@ def deduplicate(array):
 			seen.add(obj)
 	return output
 
+def listassign(array, index, item):
+	ensuresize(array, index)
+	array[index] = item
+	return item
+
+def ensuresize(array, index, value = 0):
+	if -len(array) > index < 0:
+		array[:] = [value for _ in range(len(array) - index)] + array
+	elif len(array) <= index > 0:
+		array[:] = array + [value for _ in range(index - len(array) + 1)]
+	elif 0 == index == len(array):
+		array.append(value)
+
 def getintable(obj):
 	if type(obj) == str:
 		return obj
@@ -95,8 +108,8 @@ def numerify(obj):
 			except:
 				return obj
 
-def fallthrough(obj):
-	return print(obj) or obj
+def fallthrough(a, **k):
+	return print(a, **k) or a
 
 """ % len(code)
 	code = list(code)
@@ -173,9 +186,21 @@ def mingetter(code):
 def getnumber(code):
 	return "numerify(input())"
 
+@Getter("O")
+def getord(code):
+	return "ord(%s)" % getstr(code)
+
+@Getter("Ȯ")
+def getchr(code):
+	return "chr(int(%s))" % getstr(code)
+
 @Getter("P")
-def declare(code):
+def pythonprint(code):
 	return "fallthrough(%s)" % getstr(code)
+
+@Getter("Ƥ")
+def pythonoutput(code):
+	return "fallthrough(%s, end = '')" % getstr(code)
 
 @Getter("Q")
 def deduplicate(code):
@@ -488,7 +513,7 @@ def block(code):
 	while code and code[0] != "}":
 		output.append(getstr(code))
 	if code: code.pop(0)
-	return "(" + " and ".join("[%s]" % k for k in output[:-1]) + " and %s)" % output[-1] if output else "0"
+	return "(" + " and ".join("[%s]" % k for k in output) + ")[0]" if output else "0"
 
 @Getter("⁺")
 def selfie(code):
@@ -518,6 +543,38 @@ def slicer(code):
 	else:
 		return "%s:%s" % (getstr(code), getstr(code))
 
+@Getter("¦")
+def dictentry(code):
+	return "%s: %s" % (getstr(code), getstr(code))
+
+@Getter("þ")
+def switcher(code):
+	cases = {}
+	while code and code[0] != "}":
+		key = getstr(code)
+		cases[key] = "lambda: " + getstr(code)
+	if code: code.pop(0)
+	return "{%s}.get(%s, lambda:0)()" % (", ".join("(%s): (%s)" % (key, cases[key]) for key in cases), getstr(code))
+
+@Getter("Þ")
+def switcherdefault(code):
+	cases = {}
+	while code and code[0] != "}":
+		key = getstr(code)
+		cases[key] = "lambda: " + getstr(code)
+	if code: code.pop(0)
+	default_case = getstr(code)
+	return "{%s}.get(%s, lambda: %s)()" % (", ".join("(%s): (%s)" % (key, cases[key]) for key in cases), getstr(code), default_case)
+
+@Getter("Ƭ")
+def translate(code):
+	translation = {}
+	while code and code[0] != "}":
+		key = code.pop(0)
+		translation[ord(key)] = getstr(code)
+	if code: code.pop(0)
+	return "str(%s).translate({%s})" % (getstr(code), ", ".join("%d: %s" % (key, translation[key]) for key in translation))
+
 @Getter("§")
 def funcdef(code):
 	args = []
@@ -542,7 +599,13 @@ def formlist(code):
 	while code and code[0] != "}":
 		output.append(getstr(code))
 	if code: code.pop(0)
-	return "set([" + ", ".join(output) + "])"
+	return "{" + ", ".join(output) + "}" if output else "set()"
+
+@Getter("ß")
+def reassign(code):
+	func = binfunc[code.pop(0)]
+	varname = code.pop(0)
+	return "assign('%s', %s)" % (varname, func.format(L = "getval('%s')" % varname, R = getstr(code)))
 
 @Getter("æ")
 def specials(code):
@@ -563,9 +626,15 @@ special_format = {
 	"ė": "eval",
 	"ẹ": "exec",
 	"f": "(%s).find",
+	"I": "(%s).insert(%s, %s)",
 	"i": "(%s).index",
+	"p": "pyntree_eval",
 	"r": "(%s).replace",
+	"S": "ensuresize(%s, %s)",
+	"s": "ensuresize(%s, %s, %s)",
+	"T": "transpile",
 	"=": "%s = %s",
+	"#": "listassign(%s, %s, %s)",
 }
 
 @Getter("ɼ")
@@ -594,6 +663,9 @@ def consumeNum(code, digits = "0123456789", neg = True, decimal = True):
 		output += code.pop(0)
 	return output
 
+def pyntree_eval(code):
+	exec(transpile(code))
+
 flag_file = "f" in sys.argv[1]
 flag_utf8 = "u" in sys.argv[1]
 
@@ -616,7 +688,4 @@ trans = transpile(code)
 if "--transpile" in sys.argv:
 	print(trans)
 else:
-	with open("__transpiled.py", "w") as f:
-		f.write(trans)
-	import os
-	os.system("python3 __transpiled.py")
+	exec(trans)
