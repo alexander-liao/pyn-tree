@@ -406,96 +406,33 @@ def subgetraw(code):
 	if code: code.pop(0)
 	return "getattr(%s, %r)" % (getstr(code), attrname)
 
-binfunc = {}
+binfunc = {
+	"Ø": "getattr({L}, {R})",
+	"+": "{L} + {R}",
+	"_": "{L} - {R}",
+	"×": "{L} * {R}",
+	"%": "{L} % {R}",
+	":": "{L} // {R}",
+	"÷": "{L} / {R}",
+	"*": "{L} ** {R}",
+	"&": "{L} & {R}",
+	"|": "{L} | {R}",
+	"^": "{L} ^ {R}",
+	">": "{L} > {R}",
+	"<": "{L} < {R}",
+	";": "concat({L}, {R})",
+	"=": "{L} == {R}",
+	"⁻": "{L} != {R}",
+	"ė": "{L} in {R}",
+	"ẹ": "{L} not in {R}"
+}
 
-binfunc["Ø"] = "getattr({L}, {R})"
-@Getter("Ø")
-def subgetter(code):
-	return "getattr(%s, %s)" % (getstr(code), getstr(code))
-
-binfunc["+"] = "{L} + {R}"
-@Getter("+")
-def add(code):
-	return "(%s + %s)" % (getstr(code), getstr(code))
-
-binfunc["_"] = "{L} - {R}"
-@Getter("_")
-def sub(code):
-	return "(%s - %s)" % (getstr(code), getstr(code))
-
-binfunc["×"] = "{L} * {R}"
-@Getter("×")
-def mul(code):
-	return "(%s * %s)" % (getstr(code), getstr(code))
-
-binfunc[":"] = "{L} // {R}"
-@Getter(":")
-def floordiv(code):
-	return "(%s // %s)" % (getstr(code), getstr(code))
-
-binfunc["÷"] = "{L} / {R}"
-@Getter("÷")
-def div(code):
-	return "(%s / %s)" % (getstr(code), getstr(code))
-
-binfunc["*"] = "{L} ** {R}"
-@Getter("*")
-def exp(code):
-	return "(%s ** %s)" % (getstr(code), getstr(code))
-
-binfunc["&"] = "{L} & {R}"
-@Getter("&")
-def _and(code):
-	return "(%s & %s)" % (getstr(code), getstr(code))
-
-binfunc["|"] = "{L} | {R}"
-@Getter("|")
-def _or(code):
-	return "(%s | %s)" % (getstr(code), getstr(code))
-
-binfunc["^"] = "{L} ^ {R}"
-@Getter("^")
-def _xor(code):
-	return "(%s ^ %s)" % (getstr(code), getstr(code))
-
-binfunc[">"] = "{L} > {R}"
-@Getter(">")
-def gt(code):
-	return "(%s > %s)" % (getstr(code), getstr(code))
-
-binfunc["<"] = "{L} < {R}"
-@Getter("<")
-def lt(code):
-	return "(%s < %s)" % (getstr(code), getstr(code))
+for key in binfunc:
+	Getter(key)((lambda t: lambda code: t.format(L = getstr(code), R = getstr(code)))(binfunc[key]))
 
 @Getter("¬")
 def logical_not(code):
 	return "(not %s)" % getstr(code)
-
-binfunc[";"] = "concat({L}, {R})"
-@Getter(";")
-def concat(code):
-	return "concat(%s, %s)" % (getstr(code), getstr(code))
-
-binfunc["="] = "{L} == {R}"
-@Getter("=")
-def equality(code):
-	return "(%s == %s)" % (getstr(code), getstr(code))
-
-binfunc["⁻"] = "{L} != {R}"
-@Getter("⁻")
-def inequality(code):
-	return "(%s != %s)" % (getstr(code), getstr(code))
-
-binfunc["ė"] = "{L} in {R}"
-@Getter("ė")
-def containcheck(code):
-	return "(%s in %s)" % (getstr(code), getstr(code))
-
-binfunc["ẹ"] = "{L} not in {R}"
-@Getter("ẹ")
-def uncontaincheck(code):
-	return "(%s not in %s)" % (getstr(code), getstr(code))
 
 @Getter("?")
 def condif(code):
